@@ -2,14 +2,22 @@ from urllib.parse import urlparse
 import socket
 import argparse
 
-def send_request(host, port, path, method, verbose):
+def send_request(host, port, path, method, data, headers, verbose):
     request_headers = [
         f"{method} {path} HTTP/1.1",
         f"Host: {host}",
         "Accept: */*",
         "Connection: close"
     ]
+    if headers:
+        request_headers.extend(headers)
+    if data:
+        request_headers.append(f"Content-Length: {len(data.encode('utf-8'))}")
+
     request = "\r\n".join(request_headers) + "\r\n\r\n"
+
+    if data:
+        request += data
 
     if verbose:
         print("> " + "\n> ".join(request_headers) + "\n>")
@@ -35,6 +43,8 @@ if __name__ == "__main__":
     parser.add_argument("url", type=str, help="URL to fetch")
     parser.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
     parser.add_argument("-X", "--method", type=str, default="GET", help="HTTP method to use")
+    parser.add_argument("-d", "--data", type=str, help="Data to send in the request body")
+    parser.add_argument("-H", "--header", action="append", type=str, help="Additional headers to send")
     args = parser.parse_args()
 
     url = urlparse(args.url)
@@ -52,4 +62,12 @@ if __name__ == "__main__":
         print("Only HTTP is supported")
         exit(1)
 
-    send_request(host, port, path, args.method, args.verbose)
+    send_request(
+        host,
+        port,
+        path,
+        args.method,
+        args.data,
+        args.header,
+        args.verbose
+    )
